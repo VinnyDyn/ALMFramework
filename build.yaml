@@ -1,0 +1,118 @@
+pool:
+  name: Azure Pipelines
+variables:
+  solution: 'NobleRigOperationsPPM'
+
+trigger: none
+
+steps:
+- checkout: self
+  persistCredentials: true
+
+# INSTALL
+- task: PowerPlatformToolInstaller@2
+  displayName: 'Tool Installer'
+
+# GIT CONFIG & MAIN
+- powershell: |
+    git config --global user.email "svc_PPMPRO@noblecorp.com"
+    git config --global user.name "SVC"
+    git status
+    git fetch
+    git branch --all
+    git fetch
+    git checkout main
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Git Config'
+
+# ERASE SOLUTIONS
+- powershell: |
+    rm -rf '$(System.DefaultWorkingDirectory)/solutions/'
+    git add --all
+    git commit -m "Erase Solution"
+    git push origin main
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Git Erase Solution'
+
+# UNMANAGED
+- task: PowerPlatformExportSolution@2
+  displayName: 'Export Unmanaged Solution '
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: DEV
+    SolutionName: '$(solution)'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(solution).zip'
+
+# UNPACK UNMANAGED
+- task: PowerPlatformUnpackSolution@2
+  displayName: 'Unpack Unamanaged Solution '
+  inputs:
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(solution).zip'
+    SolutionTargetFolder: '$(System.DefaultWorkingDirectory)/solutions/unmanaged/$(solution)'
+
+# MANAGED
+- task: PowerPlatformExportSolution@2
+  displayName: 'Export Managed Solution '
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: DEV
+    SolutionName: '$(solution)'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(solution)_managed.zip'
+    Managed: true
+
+# UNPACK MANAGED
+- task: PowerPlatformUnpackSolution@2
+  displayName: 'Unpack Managed Solution '
+  inputs:
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(solution)_managed.zip'
+    SolutionTargetFolder: '$(System.DefaultWorkingDirectory)/solutions/managed/$(solution)_managed'
+    SolutionType: Managed
+
+# FOLDERS
+- script: |
+    if [ ! -d "$(System.DefaultWorkingDirectory)/version" ]; then
+      mkdir -p "$(System.DefaultWorkingDirectory)/version"
+    fi
+    if [ ! -d "$(System.DefaultWorkingDirectory)/import_config/UAT" ]; then
+      mkdir -p "$(System.DefaultWorkingDirectory)/import_config/UAT"
+    fi
+    if [ ! -d "$(System.DefaultWorkingDirectory)/import_config/PRD" ]; then
+      mkdir -p "$(System.DefaultWorkingDirectory)/import_config/PRD"
+    fi
+  displayName: 'Required Folders'
+
+# JSON
+#- powershell: |
+#    . '$(System.DefaultWorkingDirectory)/json.ps1'
+#    JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solutions/unmanaged/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
+#    JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solutions/managed/$(solution)_managed/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
+#  displayName: 'JSON ERASE defaultValue Workflows'
+
+# SCHEMA
+- script: |
+    if [ ! -d "$(System.DefaultWorkingDirectory)/export_config/schema.xml" ]; then
+      echo "##vso[task.setvariable variable=export;isOutput=true]true"
+    else
+      echo "##vso[task.setvariable variable=export;isOutput=true]false"
+    fi
+  displayName: 'Check Schema File'
+  name: schemaStep
+
+# EXPORT
+# - task: PowerPlatformExportData@2
+#   condition: eq(variables['schemaStep.export'], 'true')
+#   displayName: 'Power Platform Export Data'
+#   inputs:
+#     authenticationType: PowerPlatformSPN
+#     PowerPlatformSPN: HomePDEV
+#     SchemaFile: '$(System.DefaultWorkingDirectory)/export_config/schema.xml'
+#     Overwrite: true
+#   continueOnError: true
+
+# COMMIT PUSH
+- powershell: |
+    git add --all
+    git commit -m "Solution $(solution)"
+    git push origin main
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Git'

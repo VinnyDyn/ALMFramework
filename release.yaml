@@ -1,0 +1,50 @@
+pool:
+  name: Azure Pipelines
+variables:
+  solution: 'ppmpro_App_BU'
+  target: 'HomePTST'
+  system.debug: true
+
+trigger: none
+
+steps:
+- checkout: self
+  persistCredentials: true
+
+- script: |
+    mkdir -p "$(Pipeline.Workspace)/$(solution)_managed"
+    cp -r $(System.DefaultWorkingDirectory)/solutions/managed/$(solution)_managed/* $(Pipeline.Workspace)/$(solution)_managed
+  displayName: 'Copy Repo to Pipeline'
+
+# - powershell: |
+#     . '$(System.DefaultWorkingDirectory)/xml.ps1'
+#     XmlHelperExec -xml '$(Pipeline.Workspace)/$(solution)_managed/Entities' -jsonConfig '$(System.DefaultWorkingDirectory)/import_config/$(target)' -t 'Map'
+#     XmlHelperExec -xml '$(Pipeline.Workspace)/$(solution)_managed/Entities' -jsonConfig '$(System.DefaultWorkingDirectory)/import_config/$(target)' -t 'Erase'
+#   displayName: 'XML MAP / Erase'
+
+- task: PowerPlatformToolInstaller@2
+  displayName: 'Tool Installer '
+
+- task: PowerPlatformPackSolution@2
+  inputs:
+    SolutionSourceFolder: '$(Pipeline.Workspace)/$(solution)_managed'
+    SolutionOutputFile: '$(Build.ArtifactStagingDirectory)/$(solution).zip'
+    SolutionType: Managed
+  displayName: 'Pack Solution'
+
+- task: PowerPlatformImportSolution@2
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: $(target)
+    SolutionInputFile: '$(Build.ArtifactStagingDirectory)/$(solution).zip'
+    OverwriteUnmanagedCustomizations: true
+    PublishCustomizationChanges: true
+    UseDeploymentSettingsFile: true
+    DeploymentSettingsFile: '$(System.DefaultWorkingDirectory)/import_config/$(target)/settings.json'
+  displayName: 'Import Solution'
+
+- task: microsoft-IsvExpTools.PowerPlatform-BuildTools.publish-customizations.PowerPlatformPublishCustomizations@2
+  inputs:
+    authenticationType: PowerPlatformSPN
+    PowerPlatformSPN: UAT
+  displayName: 'Power Platform Publish Customizations'
