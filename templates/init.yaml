@@ -1,0 +1,29 @@
+# Copy Paste on Power Automate
+# Set:
+# > user.email
+# > user.name
+# > sync_template
+
+pool:
+  name: 'Azure Pipelines'
+
+trigger: none
+
+steps:
+- checkout: self
+  persistCredentials: true
+
+- powershell: |
+    git config --global user.email ""
+    git config --global user.name ""
+    git checkout main
+    $sync_template = "https://github.com/VinnyDyn/ALMFramework/archive/refs/heads/main.zip"
+    $sync_zip = "$(System.DefaultWorkingDirectory)\template.zip"
+    Invoke-WebRequest -Uri $sync_template -OutFile $sync_zip
+    Expand-Archive -LiteralPath $sync_zip -DestinationPath '$(System.DefaultWorkingDirectory)'
+    Remove-Item -Path $sync_zip
+    git add --all
+    git commit -m "init"
+    git push -u origin main
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Git Template Sync'
