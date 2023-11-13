@@ -10,6 +10,14 @@ parameters:
   type: string
   default: ''
 
+- name: gitUserName
+  type: string
+  default: ''
+
+- name: gitUserEmail
+  type: string
+  default: ''
+
 trigger: none
 
 steps:
@@ -30,7 +38,7 @@ steps:
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🐈Git fetch, branch and checkout'
 
-- template: templates\install-pac.yml
+- template: templates\install-pac.yaml
   displayName: '⬇️Power Platform Tool & PAC CLI Installer'
 
 - task: PowerPlatformSetConnectionVariables@2

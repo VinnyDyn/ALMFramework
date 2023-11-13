@@ -2,7 +2,7 @@
 # Set:
 # > user.email
 # > user.name
-# > sync_template
+# > templateSource
 
 pool:
   name: 'Azure Pipelines'
@@ -17,13 +17,16 @@ steps:
     git config --global user.email ""
     git config --global user.name ""
     git checkout main
-    $sync_template = "https://github.com/VinnyDyn/ALMFramework/archive/refs/heads/main.zip"
-    $sync_zip = "$(System.DefaultWorkingDirectory)\template.zip"
-    Invoke-WebRequest -Uri $sync_template -OutFile $sync_zip
-    Expand-Archive -LiteralPath $sync_zip -DestinationPath '$(System.DefaultWorkingDirectory)'
-    Remove-Item -Path $sync_zip
-    git add --all
-    git commit -m "init"
-    git push -u origin main
-  workingDirectory: '$(System.DefaultWorkingDirectory)'
-  displayName: 'Git Template Sync'
+      $templateSource = "https://github.com/VinnyDyn/ALMFramework/archive/refs/heads/main.zip"
+      $templateZip = "$(System.DefaultWorkingDirectory)\template.zip"
+      Invoke-WebRequest -Uri $templateSource -OutFile $templateZip
+      Expand-Archive -LiteralPath $templateZip -DestinationPath '$(System.DefaultWorkingDirectory)'
+      $templateFolder = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Directory | Select-Object -First 1
+      Get-ChildItem -Path $templateFolder | Move-Item -Destination '$(System.DefaultWorkingDirectory)'
+      Remove-Item -Path $templateZip
+      Remove-Item -Path $templateFolder
+      git add --all
+      git commit -m "init"
+      git push -u origin main
+    workingDirectory: '$(System.DefaultWorkingDirectory)'
+    displayName: 'Git Template Sync'
