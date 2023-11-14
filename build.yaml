@@ -39,7 +39,6 @@ steps:
   displayName: '🐈Git fetch, branch and checkout'
 
 - template: templates\install-pac.yaml
-  displayName: '⬇️Power Platform Tool & PAC CLI Installer'
 
 - task: PowerPlatformSetConnectionVariables@2
   name: connection
@@ -49,18 +48,18 @@ steps:
   displayName: '🔐Set Connection Variables'
 
 - powershell: |
-      . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1"
-      Invoke-Clone-Or-Sync-Solution "$(pacPath)" "$(connection.BuildTools.TenantId)" "$(connection.BuildTools.ApplicationId)" "$(connectionVariables.BuildTools.ClientSecret)" "$(connectionVariables.BuildTools.Url)" '$(System.DefaultWorkingDirectory)/solution/' "${{parameters.solution}}"
+    . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
+    Invoke-Clone-Or-Sync-Solution -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)' -f '$(System.DefaultWorkingDirectory)/solution/' -s '${{parameters.solution}}'
   displayName: '🔵pac - Clone or Sync Solution'
 
-- powershell: |
-    . '$(System.DefaultWorkingDirectory)/json.ps1'
-    JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solution/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
-  displayName: '⚡Workflows: Erase Default Value'
+# - powershell: |
+#     . '$(System.DefaultWorkingDirectory)/powershell/json.ps1'
+#     JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solution/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
+#   displayName: '⚡Workflows: Erase Default Value'
 
 - powershell: |
     git add --all
-    git commit -m "Solution $(solution)"
+    git commit -m 'Solution ${{parameters.solution}}'
     git push origin main
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🐈Git add, commit and push'
