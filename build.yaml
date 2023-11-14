@@ -25,16 +25,18 @@ steps:
   persistCredentials: true
 
 - powershell: |
-    echo "##vso[task.setvariable variable=branch]("$(Build.SourceBranch)".Split('/'))[-1]"
+    $sourceBranch = '$(Build.SourceBranch)'.Split('/')
+    $lastIndex = $sourceBranch[-1]
+    echo "##vso[task.setvariable variable=branch]$lastIndex"
   displayName: '📌Get Branch Name'
 
 - powershell: |
-    git config --global user.email ""
-    git config --global user.name ""
+    git config --global user.email "${{parameters.gitUserEmail}}"
+    git config --global user.name "${{parameters.gitUserName}}"
     git fetch
-    git branch "$(branch)"
+    git branch '$(branch)'
     git fetch
-    git checkout "$(branch)"
+    git checkout '$(branch)'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🐈Git fetch, branch and checkout'
 
@@ -52,14 +54,10 @@ steps:
     Invoke-Clone-Or-Sync-Solution -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)' -f '$(System.DefaultWorkingDirectory)/solution/' -s '${{parameters.solution}}'
   displayName: '🔵pac - Clone or Sync Solution'
 
-# - powershell: |
-#     . '$(System.DefaultWorkingDirectory)/powershell/json.ps1'
-#     JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solution/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
-#   displayName: '⚡Workflows: Erase Default Value'
-
 - powershell: |
+    rm -rf '$(System.DefaultWorkingDirectory)/solution/'
     git add --all
     git commit -m 'Solution ${{parameters.solution}}'
-    git push origin main
+    git push origin '$(branch)'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🐈Git add, commit and push'

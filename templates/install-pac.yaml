@@ -7,6 +7,6 @@ steps:
     $outFolder = "pac"
     nuget install $nugetPackage -OutputDirectory $outFolder
     $pacNugetFolder = Get-ChildItem $outFolder | Where-Object {$_.Name -match $nugetPackage + "."}
-    $pacPath = $pacNugetFolder.FullName + "\tools\pac.exe"
+    $pacPath = $pacNugetFolder.FullName + "/tools"
     echo "##vso[task.setvariable variable=pacPath]$pacPath"
   displayName: '⬇️Power Platform Tool & PAC CLI Installer'

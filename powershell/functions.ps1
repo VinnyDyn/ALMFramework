@@ -8,30 +8,29 @@ function Invoke-Clone-Or-Sync-Solution {
         [Parameter(Mandatory = $true)][Alias("f")][string]$solutionFolder,
         [Parameter(Mandatory = $true)][Alias("s")][string]$solution
     )
-	
-    Write-Host $pacPath
-    Write-Host $tenantId
-    Write-Host $clientId
-    Write-Host $clientSecret
-    Write-Host $url
-    Write-Host $solutionFolder
-    Write-Host $solution
 
-    $pacexepath = "$pacPath\pac.exe"
-    $legacyFolderPath = "$solutionFolder\$solution"
-    $unpackfolderpath = "$solutionFolder\$solution\SolutionPackage"
+    $pacexepath = "$pacPath/pac.exe"
+    Write-Host $pacexepath
+
+    $legacyFolderPath = "$solutionFolder$solution"
+    Write-Host $legacyFolderPath
+
+    $unpackfolderpath = "$solutionFolder$solution/SolutionPackage"
+    Write-Host $unpackfolderpath
 
     if (Test-Path "$pacexepath") {
         # Trigger Auth
         Invoke-Expression -Command "$pacexepath auth create --url $url --name ppdev --applicationId $clientId --clientSecret $clientSecret --tenant $tenantId"
 
         # Trigger Clone or Sync
-        $cdsProjPath = "$solutionFolder\$solution\SolutionPackage\$solution.cdsproj"
-        $cdsProjFolderPath = "$solutionFolder\$solution\SolutionPackage"
+        $cdsProjPath = "$unpackfolderpath/$solution.cdsproj"
+        Write-Host $cdsProjPath
+        
+        $cdsProjFolderPath = "$unpackfolderpath"
+        Write-Host $cdsProjFolderPath
 
         if (Test-Path $cdsProjPath) {
-            # $cdsProjfolderPath = [System.IO.Path]::GetDirectoryName("$cdsProjPath")
-            $cdsProjFolderPath = Split-Path -Path $cdsProjPath -Parent
+            $cdsProjfolderPath = [System.IO.Path]::GetDirectoryName("$cdsProjPath")
             Set-Location -Path $cdsProjfolderPath
             Invoke-Expression -Command "$pacexepath solution sync --packagetype Both --async"
         }
