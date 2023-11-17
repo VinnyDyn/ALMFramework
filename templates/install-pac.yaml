@@ -1,6 +1,6 @@
 steps:
 - task: PowerPlatformToolInstaller@2
-  displayName: 'Power Platform Tool Installer'
+  displayName: '🟪Power Platform Tool Installer'
 
 - powershell: |
     $nugetPackage = "Microsoft.PowerApps.CLI"
@@ -9,4 +9,4 @@ steps:
     $pacNugetFolder = Get-ChildItem $outFolder | Where-Object {$_.Name -match $nugetPackage + "."}
     $pacPath = $pacNugetFolder.FullName + "/tools"
     echo "##vso[task.setvariable variable=pacPath]$pacPath"
-  displayName: '⬇️Power Platform Tool & PAC CLI Installer'
+  displayName: '🟦pac install'

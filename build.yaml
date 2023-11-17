@@ -1,22 +1,26 @@
 pool:
-  name: Azure Pipelines
+  name: Default
 
 parameters:
 - name: serviceConnectionName
+  displayName: 'Service Connection Name'
   type: string
-  default: ''
+  default: '#SERVICECONNECTIONNAME#'
 
 - name: solution
+  displayName: 'Solution Unique Name'
   type: string
-  default: ''
+  default: '#SOLUTION#'
 
 - name: gitUserName
+  displayName: 'Git User Name'
   type: string
-  default: ''
+  default: '#GITNAME#'
 
 - name: gitUserEmail
+  displayName: 'Git User Email'
   type: string
-  default: ''
+  default: '#GITEMAIL#'
 
 trigger: none
 
@@ -24,40 +28,67 @@ steps:
 - checkout: self
   persistCredentials: true
 
+- template: templates\extensions\new.yaml
+
 - powershell: |
     $sourceBranch = '$(Build.SourceBranch)'.Split('/')
     $lastIndex = $sourceBranch[-1]
     echo "##vso[task.setvariable variable=branch]$lastIndex"
-  displayName: '📌Get Branch Name'
+  displayName: '🟧Get Branch Name'
 
-- powershell: |
-    git config --global user.email "${{parameters.gitUserEmail}}"
-    git config --global user.name "${{parameters.gitUserName}}"
-    git fetch
-    git branch '$(branch)'
-    git fetch
-    git checkout '$(branch)'
-  workingDirectory: '$(System.DefaultWorkingDirectory)'
-  displayName: '🐈Git fetch, branch and checkout'
-
-- template: templates\install-pac.yaml
+- task: PowerPlatformToolInstaller@2
+  displayName: '🟪Power Platform Tool Installer'
 
 - task: PowerPlatformSetConnectionVariables@2
   name: connection
   inputs:
     authenticationType: 'PowerPlatformSPN'
     PowerPlatformSPN: '${{parameters.serviceConnectionName}}'
-  displayName: '🔐Set Connection Variables'
+  displayName: '🟪Set Connection Variables'
+
+- powershell: |
+    . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
+    Set-Pac-Tools-Path "$(Agent.OS)"
+  displayName: '🟦Set pac path'
+  # outputs: $pacPath, folderSpliter
+
+- template: templates\extensions\trace.yaml
+  parameters:
+    content: "$(Agent.OS)\r\n$env:POWERPLATFORMTOOLS_PACCLIPATH\r\n$(pacPath)\r\n$(BuildTools.EnvironmentUrl)\r\n$(connection.BuildTools.TenantId)\r\n$(connection.BuildTools.ApplicationId)\r\n$(connection.BuildTools.ClientSecret)"
+
+- powershell: |
+    . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
+    Invoke-Pac-Authenticate -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)'
+  displayName: '⬛pac auth create'
+  failOnStderr: true
 
 - powershell: |
     . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
     Invoke-Clone-Or-Sync-Solution -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)' -f '$(System.DefaultWorkingDirectory)/solution/' -s '${{parameters.solution}}'
-  displayName: '🔵pac - Clone or Sync Solution'
+  displayName: '⬛pac - Clone or Sync Solution'
+  failOnStderr: true
+
+- task: PublishBuildArtifacts@1
+  inputs:
+    PathtoPublish: '$(pacPath)/logs/pac-log.txt'
+    ArtifactName: 'drop'
+    publishLocation: 'Container'
+  condition: failed()
+  continueOnError: true
+  displayName: '❌ Drop pac-log.txt'
 
 - powershell: |
-    rm -rf '$(System.DefaultWorkingDirectory)/solution/'
+    git config --global user.email "${{parameters.gitUserEmail}}"
+    git config --global user.name "${{parameters.gitUserName}}"
+    git status
+    git fetch
+    git branch --all
+    git fetch
+    git checkout '$(branch)'
     git add --all
     git commit -m 'Solution ${{parameters.solution}}'
     git push origin '$(branch)'
   workingDirectory: '$(System.DefaultWorkingDirectory)'
-  displayName: '🐈Git add, commit and push'
+  displayName: '🟧Git add, commit and push'
+
+- template: templates\extensions\publish.yaml

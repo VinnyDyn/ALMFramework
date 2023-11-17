@@ -1,0 +1,5 @@
+steps:
+- powershell: |
+    $extensionsPath = '$(System.DefaultWorkingDirectory)/extensions.txt'
+    Set-Content -Path $extensionsPath -Value "📖"
+  displayName: '📘Instance Extensions'

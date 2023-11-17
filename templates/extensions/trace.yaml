@@ -1,0 +1,11 @@
+parameters:
+- name: content
+  displayName: 'Content'
+  type: string
+  default: ''
+
+steps:
+- powershell: |
+    $extensionsPath = '$(System.DefaultWorkingDirectory)/extensions.txt'
+    Add-Content -Path $extensionsPath -Value "${{parameters.content}}"
+  displayName: '📘Log Extensions'

@@ -1,0 +1,6 @@
+steps:
+- powershell: |
+    $extensionsPath = '$(System.DefaultWorkingDirectory)/extensions.txt'
+    echo "##vso[task.addattachment type=Distributedtask.Core.Summary;name=Trace;]$extensionsPath"
+  condition: succeededOrFailed()
+  displayName: '📘Publish Extensions'
