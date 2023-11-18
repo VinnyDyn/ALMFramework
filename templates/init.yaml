@@ -24,8 +24,6 @@ steps:
     Expand-Archive -LiteralPath $templateZip -DestinationPath '$(System.DefaultWorkingDirectory)'
     $templateFolder = Get-ChildItem -Path '$(System.DefaultWorkingDirectory)' -Directory | Select-Object -First 1
     Get-ChildItem -Path $templateFolder | Move-Item -Destination '$(System.DefaultWorkingDirectory)'
-    Remove-Item -Path $templateZip
-    Remove-Item -Path $templateFolder
     Write-Host "End download template"
     Write-Host "Start build.yaml"
     $buildYamlFilePath = "$(System.DefaultWorkingDirectory)\build.yaml"
@@ -37,6 +35,8 @@ steps:
     $buildYamlContent = $buildYamlContent -replace "#GITEMAIL#", $gitUser
     Set-Content -Path $buildYamlFilePath -Value $buildYamlContent
     Write-Host "End build.yaml"
+    Remove-Item -Path $templateZip
+    Remove-Item -Path $templateFolder -Recurse -Force
     git add --all
     git commit -m "init"
     git push -u origin main
