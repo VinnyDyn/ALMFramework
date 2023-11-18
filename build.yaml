@@ -12,6 +12,11 @@ parameters:
   type: string
   default: '#SOLUTION#'
 
+- name: version
+  displayName: 'Solution Version'
+  type: string
+  default: '#VERSION#'
+
 - name: gitUserName
   displayName: 'Git User Name'
   type: string
@@ -61,6 +66,14 @@ steps:
     Invoke-Pac-Authenticate -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)'
   displayName: '⬛pac auth create'
   failOnStderr: true
+
+- task: PowerPlatformSetSolutionVersion@2
+  inputs:
+    authenticationType: 'PowerPlatformSPN'
+    PowerPlatformSPN: '${{parameters.serviceConnectionName}}'
+    SolutionName: '${{parameters.solution}}'
+    SolutionVersionNumber: '${{parameters.version}}'
+  displayName: '🟪Set Solution Version ${{parameters.solution}} : ${{parameters.version}}'
 
 - powershell: |
     . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'

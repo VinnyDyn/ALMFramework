@@ -17,6 +17,7 @@ steps:
     git config --global user.email ""
     git config --global user.name ""
     git checkout main
+    Write-Host "Start download template"
     $templateSource = "https://github.com/VinnyDyn/ALMFramework/archive/refs/heads/main.zip"
     $templateZip = "$(System.DefaultWorkingDirectory)\template.zip"
     Invoke-WebRequest -Uri $templateSource -OutFile $templateZip
@@ -25,8 +26,19 @@ steps:
     Get-ChildItem -Path $templateFolder | Move-Item -Destination '$(System.DefaultWorkingDirectory)'
     Remove-Item -Path $templateZip
     Remove-Item -Path $templateFolder
+    Write-Host "End download template"
+    Write-Host "Start build.yaml"
+    $buildYamlFilePath = "$(System.DefaultWorkingDirectory)\build.yaml"
+    $buildYamlContent = Get-Content -Path $buildYamlFilePath -Raw
+    $buildYamlContent = $buildYamlContent -replace "#SERVICECONNECTIONNAME#", $gitName
+    $buildYamlContent = $buildYamlContent -replace "#SOLUTION#", $gitUser
+    $buildYamlContent = $buildYamlContent -replace "#VERSION#", $gitUser
+    $buildYamlContent = $buildYamlContent -replace "#GITNAME#", $gitUser
+    $buildYamlContent = $buildYamlContent -replace "#GITEMAIL#", $gitUser
+    Set-Content -Path $buildYamlFilePath -Value $buildYamlContent
+    Write-Host "End build.yaml"
     git add --all
     git commit -m "init"
-    xgit push -u origin main
-    workingDirectory: '$(System.DefaultWorkingDirectory)'
-    displayName: 'Git Template Sync'
+    git push -u origin main
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: 'Git Template Sync'
