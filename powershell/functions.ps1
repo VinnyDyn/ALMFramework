@@ -35,6 +35,19 @@ function Invoke-Pac-Authenticate {
     return $pacexepath
 }
 
+function Invoke-Pac-Solution-Online-Version
+{
+    param (
+        [Parameter(Mandatory = $true)][Alias("p")][string]$pacPath,
+        [Parameter(Mandatory = $true)][Alias("s")][string]$solution,
+        [Parameter(Mandatory = $true)][Alias("v")][string]$version
+    )
+
+    $pacexepath = "$pacPath/pac.exe"
+    Write-Host $pacexepath
+    Invoke-Expression -Command "$pacexepath solution online-version -sn $solution -sv $version"
+}
+
 function Invoke-Clone-Or-Sync-Solution {
     param (
         [Parameter(Mandatory = $true)][Alias("p")][string]$pacPath,

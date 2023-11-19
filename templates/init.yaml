@@ -14,8 +14,8 @@ steps:
   persistCredentials: true
 
 - powershell: |
-    git config --global user.email ""
-    git config --global user.name ""
+    git config --global user.email "@{outputs('Get_Organization')?['body/vhlb_git_useremail']}"
+    git config --global user.name "@{outputs('Get_Organization')?['body/vhlb_git_username']}"
     git checkout main
     Write-Host "Start download template"
     $templateSource = "https://github.com/VinnyDyn/ALMFramework/archive/refs/heads/main.zip"
@@ -28,14 +28,14 @@ steps:
     Write-Host "Start build.yaml"
     $buildYamlFilePath = "$(System.DefaultWorkingDirectory)\build.yaml"
     $buildYamlContent = Get-Content -Path $buildYamlFilePath -Raw
-    $buildYamlContent = $buildYamlContent -replace "#SERVICECONNECTIONNAME#", $gitName
-    $buildYamlContent = $buildYamlContent -replace "#SOLUTION#", $gitUser
-    $buildYamlContent = $buildYamlContent -replace "#VERSION#", $gitUser
-    $buildYamlContent = $buildYamlContent -replace "#GITNAME#", $gitUser
-    $buildYamlContent = $buildYamlContent -replace "#GITEMAIL#", $gitUser
+    $buildYamlContent = $buildYamlContent -replace "#SERVICECONNECTIONNAME#", "@{outputs('Get_Connection')?['body/vhlb_name']}"
+    $buildYamlContent = $buildYamlContent -replace "#SOLUTION#", "@{triggerOutputs()?['body/vhlb_name']}"
+    $buildYamlContent = $buildYamlContent -replace "#VERSION#", "1.0.0"
+    $buildYamlContent = $buildYamlContent -replace "#GITNAME#", "@{outputs('Get_Organization')?['body/vhlb_git_username']}"
+    $buildYamlContent = $buildYamlContent -replace "#GITEMAIL#", "@{outputs('Get_Organization')?['body/vhlb_git_useremail']}"
     Set-Content -Path $buildYamlFilePath -Value $buildYamlContent
     Write-Host "End build.yaml"
-    Remove-Item -Path $templateZip
+    Remove-Item -Path $templateZip -Force
     Remove-Item -Path $templateFolder -Recurse -Force
     git add --all
     git commit -m "init"
