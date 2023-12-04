@@ -1,3 +1,7 @@
+variables:
+- name: skipVersionUpdate
+  value: false
+
 pool:
   name: Default
 
@@ -80,6 +84,7 @@ steps:
     . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
     Invoke-Pac-Solution-Online-Version -p '$(pacPath)' -s '${{parameters.solution}}' -v '${{parameters.version}}'
   displayName: '⬛pac solution online-version'
+  condition: eq(variables['skipVersionUpdate'], false)
   failOnStderr: true
 
 - powershell: |
