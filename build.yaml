@@ -44,8 +44,11 @@ steps:
 - powershell: |
     git config --global user.email "${{parameters.gitUserEmail}}"
     git config --global user.name "${{parameters.gitUserName}}"
-    git checkout -b '$(branch)'
-  displayName: '🟧Get config and checkout'
+    git fetch --all
+    git branch --all
+    git checkout '$(branch)'
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+  displayName: '🟧Git fetch, branch and checkout'
 
 - task: PowerPlatformToolInstaller@2
   displayName: '🟪Power Platform Tool Installer'
@@ -75,7 +78,7 @@ steps:
 
 - powershell: |
     . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
-    Invoke-Pac-Solution-Online-Version -p '$(pacPath)' -s '${{parameters.solution}}' -v ${{parameters.version}}
+    Invoke-Pac-Solution-Online-Version -p '$(pacPath)' -s '${{parameters.solution}}' -v '${{parameters.version}}'
   displayName: '⬛pac solution online-version'
   failOnStderr: true
 
@@ -101,9 +104,11 @@ steps:
 #   displayName: '🟦JSON ERASE defaultValue Workflows'
 
 - powershell: |
+    git pull origin '$(branch)'
+    git merge origin/'$(branch)'
     git add --all
     git commit -m 'Solution ${{parameters.solution}}'
-    git push origin '$(branch)'
+    git push origin '$(branch)' -f
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🟧Git add, commit and push'
 
