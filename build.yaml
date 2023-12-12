@@ -1,6 +1,9 @@
 variables:
 - name: skipVersionUpdate
-  value: false
+  value: 0
+
+- value: targetEnvironment
+  value: ''
 
 pool:
   name: Default
@@ -84,7 +87,7 @@ steps:
     . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
     Invoke-Pac-Solution-Online-Version -p '$(pacPath)' -s '${{parameters.solution}}' -v '${{parameters.version}}'
   displayName: '⬛pac solution online-version'
-  condition: eq(variables['skipVersionUpdate'], false)
+  condition: eq(variables['skipVersionUpdate'], 1)
   failOnStderr: true
 
 - powershell: |
@@ -92,6 +95,23 @@ steps:
     Invoke-Clone-Or-Sync-Solution -p '$(pacPath)' -t '$(connection.BuildTools.TenantId)' -c '$(connection.BuildTools.ApplicationId)' -cs '$(connection.BuildTools.ClientSecret)' -u '$(BuildTools.EnvironmentUrl)' -f '$(System.DefaultWorkingDirectory)/solution/' -s '${{parameters.solution}}'
   displayName: '⬛pac solution clone or sync'
   failOnStderr: true
+
+- powershell: |
+    . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
+    Invoke-Solution-Create-Settings -p '$(pacPath)' -f '$(System.DefaultWorkingDirectory)/solution/' -s '${{parameters.solution}}' -e variables['targetEnvironment']
+  displayName: '⬛pac create-settings'
+  failOnStderr: true
+
+- powershell: |
+    . '$(System.DefaultWorkingDirectory)/powershell/functions.ps1'
+    Invoke-Solution-Export-Data -p '$(pacPath)' -f '$(System.DefaultWorkingDirectory)/dataSettings/'
+  displayName: '⬛pac data export'
+  failOnStderr: true
+
+# - powershell: |
+#      . '$(System.DefaultWorkingDirectory)/powershell/json.ps1'
+#      JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solution/unmanaged/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
+#    displayName: '🟦JSON ERASE defaultValue Workflows'
 
 - task: PublishBuildArtifacts@1
   inputs:
@@ -101,12 +121,6 @@ steps:
   condition: failed()
   continueOnError: true
   displayName: '❌ Drop pac-log.txt'
-
-# - powershell: |
-#     . '$(System.DefaultWorkingDirectory)/powershell/json.ps1'
-#     JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solutions/unmanaged/$(solution)/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
-#     JsonHelperMap -tgt '_' -json '$(System.DefaultWorkingDirectory)/solutions/managed/$(solution)_managed/Workflows' -jsonConfig '_' -fn '___' -p 'defaultValue' -sp 'triggers,actions' -a 'Erase'
-#   displayName: '🟦JSON ERASE defaultValue Workflows'
 
 - powershell: |
     git pull origin '$(branch)'
