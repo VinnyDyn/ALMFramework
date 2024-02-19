@@ -2,7 +2,7 @@ variables:
 - name: skipVersionUpdate
   value: 0
 
-- value: targetEnvironment
+- name: targetEnvironment
   value: ''
 
 pool:
@@ -40,7 +40,7 @@ steps:
 - checkout: self
   persistCredentials: true
 
-- template: templates\extensions\new.yaml
+#- template: templates\extensions\new.yaml
 
 - powershell: |
     $sourceBranch = '$(Build.SourceBranch)'.Split('/')
@@ -73,7 +73,7 @@ steps:
   displayName: '🟦Set pac path'
   # outputs: $pacPath, folderSpliter
 
-- template: templates\extensions\trace.yaml
+#- template: templates\extensions\trace.yaml
   parameters:
     content: "$(Agent.OS)\r\n$env:POWERPLATFORMTOOLS_PACCLIPATH\r\n$(pacPath)\r\n$(BuildTools.EnvironmentUrl)\r\n$(connection.BuildTools.TenantId)\r\n$(connection.BuildTools.ApplicationId)\r\n$(connection.BuildTools.ClientSecret)"
 
@@ -131,4 +131,4 @@ steps:
   workingDirectory: '$(System.DefaultWorkingDirectory)'
   displayName: '🟧Git add, commit and push'
 
-- template: templates\extensions\publish.yaml
+#- template: templates\extensions\publish.yaml
